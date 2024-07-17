@@ -1,6 +1,8 @@
+
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../contexts/AuthContext";
+import { GameProvider } from "../contexts/GameContext"; // Import GameProvider
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,9 +16,11 @@ export default function RootLayout({ children }) {
     <html lang="en" data-theme="my-theme" className="bg-base-300">
       {/* <head className="bg-base-300"></head> */}
       <body className="bg-base-300">
-        <AuthProvider>
+        <GameProvider>
+          <AuthProvider>
           {children}
-        </AuthProvider>
+          </AuthProvider>
+        </GameProvider>
       </body>
     </html>
   );

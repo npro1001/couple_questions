@@ -1,22 +1,28 @@
 "use client"
 
 import Head from 'next/head';
-import NavMenu from '../components/NavMenu'
+import NavMenu from '../../components/NavMenu'
 import { useRouter } from 'next/navigation';
 import Spline from "@splinetool/react-spline"
-import { HomeCard } from "../components/HomeCard"
+import { HomeCard } from "../../components/HomeCard"
 import Image from 'next/image'
-import Header from "../components/Header"
-import { useAuth } from '../../contexts/AuthContext'
-import { useEffect } from 'react'
-import ProtectedRoute from '../components/ProtectedRoute'
+import Header from "../../components/Header"
+import { useAuth } from '../../../contexts/AuthContext'
+import { useGame } from '../../../contexts/GameContext'; // Import useGame
+import { useEffect, useState } from 'react'
+import ProtectedRoute from '../../components/ProtectedRoute'
+import { motion, AnimatePresence } from 'framer-motion'
+import { v4 as uuidv4 } from 'uuid';
+
 
 
 
 export default function HomePage() {
 
   const { user, loading } = useAuth();
+  const { setGameSession } = useGame();
   const router = useRouter();
+  const [startGame, setStartGame] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -37,14 +43,44 @@ export default function HomePage() {
     return null;
   }
 
-  const handleNewGame = (e) => {
+  const handleStartGame = (e) => {
     e.preventDefault();
-    router.push('/game');
-
+    // router.push('/game');
+    setStartGame(true);
   };
 
   return (
     <ProtectedRoute>
+      <motion.div
+        initial={{ opacity: 1, scale: 1 }}
+        animate={{ opacity: startGame ? 0 : 1, scale: startGame ? 1.5 : 1 }}
+        exit={{ opacity: 0, scale: 5 }}
+        transition={{ 
+          opacity: { duration: 0.5 },  // Duration for opacity transition
+          scale: { duration: 0.7}  // Duration and delay for scale transition
+        }}
+        onAnimationComplete={async () => {
+          if (startGame) {
+            console.log("New game started");
+            const sessionId = uuidv4();
+            const res = await fetch('/api/game/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId, hostId: user._id }),
+            });
+            
+            if (res.ok) {
+              setGameSession({ sessionId, hostId: user._id, participants: [user._id], status: 'waiting' }); // Set game session
+
+              router.push(`/game_lobby?sessionId=${sessionId}`);
+            } else {
+              // Handle error
+              console.log("Error from home page creating game")
+
+            }
+          }
+        }}
+      >
       <div className="container mx-auto p-4 h-lvh flex flex-col overflow-hidden">
         <Head>
           <title>Home - Create Next App</title>
@@ -62,7 +98,7 @@ export default function HomePage() {
 
           {/* Card */}
           <div className="min-h-[50vh] h-2/3 w-full flex justify-center items-center">
-            <HomeCard color="#818CF8" />
+            <HomeCard color="#818CF8" onStartGame={handleStartGame}/>
           </div>
 
           {/* Coin Info */}
@@ -94,6 +130,7 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      </motion.div> 
     </ProtectedRoute>
   );
 }

@@ -1,4 +1,4 @@
-import clientPromise from '../../lib/mongodb';
+import {connectToDatabase} from '../../lib/mongodb';
 import User from '../../models/User';
 import jwt from 'jsonwebtoken';
 
@@ -8,8 +8,9 @@ export default async function handler(req, res) {
     const { email, password } = req.body;
 
     try {
-      const client = await clientPromise;
-      const db = client.db('couple_questions');
+      // const client = await clientPromise;
+      // const db = client.db('couple_questions');
+      const { db } = await connectToDatabase();
       const collection = db.collection('users');
 
       console.log('Connecting to the database...');

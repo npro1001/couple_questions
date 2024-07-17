@@ -23,7 +23,7 @@ export function LightStrip() {
   );
 }
 
-export function HomeCard(color) {
+export function HomeCard({color, onStartGame}) {
   const [text, setText] = useState('Lets run it!');
   const [rotation, setRotation] = useState([0, 0, 0]);
   const texture = useLoader(TextureLoader, './texture4.jpeg'); // Assuming you have a card texture
@@ -75,7 +75,7 @@ export function HomeCard(color) {
           <Html position={[0, 0, 0.1]} transform occlude>
             <div className="flex flex-col items-center">
             <h2 className="font-playwrite text-3xl mb-5">Couple Questions</h2>
-            <button className="btn btn-xs btn-base-300 hover:btn-primary">New Game</button>
+            <button className="btn btn-xs btn-base-300 hover:btn-primary" onClick={onStartGame}>New Game</button>
             </div>
           </Html>
         </RoundedBox>
