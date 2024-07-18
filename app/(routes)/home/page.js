@@ -13,13 +13,14 @@ import { useEffect, useState } from 'react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { motion, AnimatePresence } from 'framer-motion'
 import { v4 as uuidv4 } from 'uuid';
+import { User } from '../../../models/User';
 
 
 
 
 export default function HomePage() {
 
-  const { user, loading } = useAuth();
+  const { user, loading, signOut, updateUser } = useAuth();
   const { setGameSession } = useGame();
   const router = useRouter();
   const [startGame, setStartGame] = useState(false);
@@ -27,9 +28,9 @@ export default function HomePage() {
   useEffect(() => {
     if (!loading && !user) {
       console.log("No user found in Home page");
-      router.push('/sign_in');
+      signOut();
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, signOut]);
 
   if (loading) {
     return (
@@ -71,7 +72,7 @@ export default function HomePage() {
             
             if (res.ok) {
               setGameSession({ sessionId, hostId: user._id, participants: [user._id], status: 'waiting' }); // Set game session
-
+              updateUser({...user, currentGameSession: sessionId }); // Update user's current game session
               router.push(`/game_lobby?sessionId=${sessionId}`);
             } else {
               // Handle error

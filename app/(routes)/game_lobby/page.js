@@ -16,8 +16,8 @@ import { faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 const GameLobby = () => {
     const router = useRouter();
-    const { user, loading } = useAuth();
-    const { gameSession, setGameSession, participants, setParticipants, addParticipant} = useGame();
+    const { user, loading, signOut } = useAuth();
+    const { gameSession, setGameSession, fetchGameSession, participants, setParticipants, addParticipant} = useGame();
     const [tempUser, setTempUser] = useState(null);
     const [showAddGuestForm, setShowAddGuestForm] = useState(false);
     const [showInvitePopup, setShowInvitePopup] = useState(false);
@@ -25,16 +25,38 @@ const GameLobby = () => {
     const [guestInterests, setGuestInterests] = useState([]);
     const [interestInput, setInterestInput] = useState('');
 
-
     useEffect(() => {
-    if (!loading && !user) {
-        console.log("No user found in GameLobby");
-        router.push('/sign_in');
-    } else {
-        console.log('User in GameLobby:', user);
-        console.log('Game session in GameLobby:', gameSession);
-    }
-    }, [user, loading, gameSession, router]);
+        // Check if loading is finished and user session is lost
+        if (!loading && !user) {
+          console.log("No user found in GameLobby");
+          signOut(); 
+        
+        } else if (user && !user.currentGameSession) {
+          // If user exists but there's no current game session, fetch it
+          console.log('Fetching game session for the user');
+          fetchGameSession(); // Assuming fetchGameSession fetches and sets the game session
+        } else {
+          // This block can be used for additional actions when user and game session are present
+          console.log('User and game session are present... fetching participant');
+          if (gameSession.participants && gameSession.participants.length > 1) {
+            const tempUserId = gameSession.participants[1].id; //! Assuming you want the second participant's ID
+            // fetch(`/api/tempUser/${tempUserId}`, {
+            //     method: 'GET',
+            //     headers: {
+            //       'Content-Type': 'application/json',
+            //     },
+            //   })
+            //   .then(response => response.json())
+            //   .then(data => {
+            //     console.log('Fetched TempUser:', data);
+            //     // Perform actions with the fetched data
+            //   })
+            //   .catch(error => {
+            //     console.error('Error fetching TempUser:', error);
+            //   });
+        }
+        }
+      }, [user, loading, fetchGameSession, gameSession, signOut]);
 
     
 
@@ -50,11 +72,6 @@ const GameLobby = () => {
         return null;
     }
 
-    // const handleAddGuest = async (name, interests) => {
-    //     const guest = new TempUser(uuidv4(), name, interests);
-    //     setTempUser(guest);
-    //     await addParticipant(guest._id);
-    // };
 
     const handleStartGame = () => {
         // Logic to start the game
@@ -77,7 +94,6 @@ const GameLobby = () => {
         setTempUser(guest);
         setShowAddGuestForm(false);
         await addParticipant(guest._id);
-        console.log("Updated session in page.js method: ", gameSession)
     };
 
     const handleAddInterest = () => {

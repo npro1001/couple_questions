@@ -12,15 +12,16 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  
   return (
     <html lang="en" data-theme="my-theme" className="bg-base-300">
       {/* <head className="bg-base-300"></head> */}
       <body className="bg-base-300">
-        <GameProvider>
-          <AuthProvider>
-          {children}
-          </AuthProvider>
-        </GameProvider>
+        <AuthProvider>
+          <GameProvider>
+            {children}
+          </GameProvider>
+        </AuthProvider>
       </body>
     </html>
   );

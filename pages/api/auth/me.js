@@ -1,4 +1,4 @@
-import clientPromise from '../../../lib/mongodb';
+import { connectToDatabase } from '../../../lib/mongodb';
 import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
 
@@ -9,9 +9,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log("Attempting to validate token")
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const client = await clientPromise;
-    const db = client.db('couple_questions');
+    const { db } = await connectToDatabase();
     const user = await db.collection('users').findOne({ _id: ObjectId.createFromHexString(decoded.userId) });
 
     if (!user) {
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    console.log("User FOUND in /api/auth/me", user)
+    // console.log("User FOUND in /api/auth/me", user)
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error: error.message });

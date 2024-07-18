@@ -1,6 +1,6 @@
 
 class User {
-    constructor(id, email, password, firstName, lastName, questionCredits = 0, questionSkipCredits = 0, interests = []) {
+    constructor(id, email, password, firstName, lastName, questionCredits = 0, questionSkipCredits = 0, interests = [], currentGameSession = null) {
         this._id = id;
         this.email = email;
         this.password = password;
@@ -9,6 +9,7 @@ class User {
         this.questionCredits = questionCredits;
         this.questionSkipCredits = questionSkipCredits;
         this.interests = interests;
+        this.currentGameSession = currentGameSession;
     }
 
     toJSON() {
@@ -21,6 +22,8 @@ class User {
             questionCredits: this.questionCredits,
             questionSkipCredits: this.questionSkipCredits,
             interests: this.interests,
+            currentGameSession: this.currentGameSession
+
         };
     }
 
@@ -34,8 +37,18 @@ class User {
             json.questionCredits,
             json.questionSkipCredits,
             json.interests,
+            json.currentGameSession,
         );
     }
+
+    updateCurrentGameSession(gameSession) {
+        this.currentGameSession = gameSession;
+    }
+
+    removeCurrentGameSession() {
+        this.currentGameSession = null;
+    }
+
 
     updateEmail(newEmail) {
         this.email = newEmail;
