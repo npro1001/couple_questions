@@ -35,6 +35,13 @@ export default function SignInForm() {
         window.location.href = '/api/auth/google';
       };
 
+    // if (loading) {
+    //     return (
+    //         <div className="flex justify-around items-center pt-8">
+    //         <span className="loading loading-ring loading-lg"></span>
+    //         </div>
+    //     );
+    // }
 
     return (
         <>

@@ -26,6 +26,9 @@ export default function HomePage() {
   const [startGame, setStartGame] = useState(false);
 
   useEffect(() => {
+    if (loading ) {
+      return
+    }
     if (!loading && !user) {
       console.log("No user found in Home page");
       signOut();
@@ -50,6 +53,14 @@ export default function HomePage() {
     setStartGame(true);
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-around items-center pt-8">
+        <span className="loading loading-ring loading-lg"></span>
+      </div>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <motion.div
@@ -71,8 +82,8 @@ export default function HomePage() {
             });
             
             if (res.ok) {
-              setGameSession({ sessionId, hostId: user._id, participants: [user._id], status: 'waiting' }); // Set game session
-              updateUser({...user, currentGameSession: sessionId }); // Update user's current game session
+              await setGameSession({ sessionId, hostId: user._id, participants: [user._id], status: 'waiting' }); // Set game session
+              await updateUser({...user, currentGameSession: sessionId }); // Update user's current game session
               router.push(`/game_lobby?sessionId=${sessionId}`);
             } else {
               // Handle error

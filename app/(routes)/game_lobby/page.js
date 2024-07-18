@@ -12,12 +12,12 @@ import { faEnvelope } from "@fortawesome/free-regular-svg-icons";
 import { faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 
-// TODO - clean logging, add remove_participant logic, fix refresh button kicking out user, sign out should remove token AND game context from DB
+// TODO - Sign out should remove token AND game context from DB
 
 const GameLobby = () => {
     const router = useRouter();
     const { user, loading, signOut } = useAuth();
-    const { gameSession, setGameSession, fetchGameSession, participants, setParticipants, addParticipant} = useGame();
+    const { gameSession, fetchGameSession, addParticipant, removeParticipant} = useGame();
     const [tempUser, setTempUser] = useState(null);
     const [showAddGuestForm, setShowAddGuestForm] = useState(false);
     const [showInvitePopup, setShowInvitePopup] = useState(false);
@@ -26,6 +26,9 @@ const GameLobby = () => {
     const [interestInput, setInterestInput] = useState('');
 
     useEffect(() => {
+        // TODO REVIEW to ensure it deosnt trigger multiple auth checks
+
+        if (loading) return
         // Check if loading is finished and user session is lost
         if (!loading && !user) {
           console.log("No user found in GameLobby");
@@ -35,12 +38,18 @@ const GameLobby = () => {
           // If user exists but there's no current game session, fetch it
           console.log('Fetching game session for the user');
           fetchGameSession(); // Assuming fetchGameSession fetches and sets the game session
-        } else {
-          // This block can be used for additional actions when user and game session are present
-          console.log('User and game session are present... fetching participant');
+        } else if (gameSession) {
+
           if (gameSession.participants && gameSession.participants.length > 1) {
-            const tempUserId = gameSession.participants[1].id; //! Assuming you want the second participant's ID
-            // fetch(`/api/tempUser/${tempUserId}`, {
+            const participant = gameSession.participants[1];
+
+            if (participant.name) {
+            //   console.log('Temp User:', participant);
+              setTempUser(participant);
+            } else if (participant.userId) {
+            // TODO IMPL
+              // It's a real user, fetch their details
+            //   fetch(`/api/users/${participant.userId}`, {
             //     method: 'GET',
             //     headers: {
             //       'Content-Type': 'application/json',
@@ -48,25 +57,27 @@ const GameLobby = () => {
             //   })
             //   .then(response => response.json())
             //   .then(data => {
-            //     console.log('Fetched TempUser:', data);
-            //     // Perform actions with the fetched data
+            //     console.log('Fetched Real User:', data);
+            //     // You can set the real user state here if you want
+            //     setTempUser(data); // Assuming you're reusing the tempUser state
             //   })
             //   .catch(error => {
-            //     console.error('Error fetching TempUser:', error);
+            //     console.error('Error fetching Real User:', error);
             //   });
+            }
         }
         }
-      }, [user, loading, fetchGameSession, gameSession, signOut]);
+      }, [user, loading, fetchGameSession, gameSession, setTempUser, signOut]);
 
     
 
-    if (loading) {
-        return (
-            <div className="flex justify-around items-center pt-8">
-                <span className="loading loading-ring loading-lg"></span>
-            </div>
-        );
-    }
+    // if (loading) {
+    //     return (
+    //         <div className="flex justify-around items-center pt-8 h-lvh align-center">
+    //             <span className="loading loading-ring loading-lg align-middle"></span>
+    //         </div>
+    //     );
+    // }
 
     if (!loading && !user) {
         return null;
@@ -90,10 +101,10 @@ const GameLobby = () => {
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-        const guest = new TempUser(uuidv4(), guestName, guestInterests);
+        const guest = { type: 'temp', name: guestName, interests: guestInterests };
         setTempUser(guest);
         setShowAddGuestForm(false);
-        await addParticipant(guest._id);
+        await addParticipant(guest);
     };
 
     const handleAddInterest = () => {
@@ -108,6 +119,7 @@ const GameLobby = () => {
     };
 
     const handleRemoveGuest = () => {
+        removeParticipant(tempUser);
         setGuestName('');
         setGuestInterests([]);
         setShowAddGuestForm(false);

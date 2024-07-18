@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import User from '../models/User';
 
 const AuthContext = createContext();
@@ -11,14 +11,22 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const router = useRouter();
+  const pathname = usePathname();
+
 
   useEffect(() => {
     const initializeAuth = async () => {
+      // Skip authentication logic if the current page is the sign-in page
+      // if (pathname === '/sign_in') {
+      //   setLoading(false);
+      //   return;
+      // }
+      console.log("initializing auth")
       const token = localStorage.getItem('token');
       if (token) {
         try {
           // Replace this URL with your actual API endpoint
-          const response = await fetch('http://localhost:3000/api/auth/me', {
+          const response = await fetch('/api/auth/me', {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (!response.ok) throw new Error('Token validation failed');
@@ -30,12 +38,16 @@ export function AuthProvider({ children }) {
           localStorage.removeItem('token'); // Clear invalid token
           router.push('/sign_in'); // Redirect to sign-in page
         }
+      } else {
+        if (pathname !== '/sign_in') {
+          router.push('/sign_in')
+        }
       }
       setLoading(false);
     };
 
     initializeAuth();
-  }, [router]);
+  }, [router, pathname]);
 
   const fetchUser = async (token) => {
     setLoading(true);
@@ -114,10 +126,21 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => {
     localStorage.removeItem('token');
-    console.log("User signed out")
+    // TODO remove game session
+    console.log("User signed out");
     setUser(null);
-    await router.push('/sign_in');
+    if (pathname !== '/sign_in') {
+      router.push('/sign_in');
+    }
   };
+
+  // if (loading) {
+  //   return (
+  //     <div className="flex justify-around items-center pt-8">
+  //       <span className="loading loading-ring loading-lg"></span>
+  //     </div>
+  //   );
+  // }
 
   return (
     <AuthContext.Provider value={{ user, loading, error, setLoading, updateUser, fetchUser, signIn, signOut }}>

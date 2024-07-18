@@ -48,12 +48,12 @@ const ProtectedRoute = ({ children }) => {
     }
   }, [isLoading, isAuthenticated, signOut]);
 
-  if (loading || loading) {
-    return (
-      <div className="flex justify-around items-center pt-8">
-        <span className="loading loading-ring loading-lg"></span>
-      </div>);
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex justify-around items-center pt-8">
+  //       <span className="loading loading-ring loading-lg"></span>
+  //     </div>);
+  // }
   
 
   // if (!loading && !user) {

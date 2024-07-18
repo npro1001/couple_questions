@@ -37,33 +37,59 @@ export const GameProvider = ({ children }) => {
     }
     setLoading(false)
 
-  }, [setLoading, setGameSession]);
+  }, [setLoading]);
 
-  const addParticipant = async (participantId) => {
+  const addParticipant = async (participant) => {
     if (!gameSession) return;
 
     setLoading(true);
 
-    // Update the game session in the database
     const res = await fetch(`/api/game/add_participant`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: gameSession.sessionId, participantId }),
+      body: JSON.stringify({ sessionId: gameSession.sessionId, participant }),
     });
 
     if (res.ok) {
       console.log("OK")
       const updatedSession = await res.json();
-      // console.log("Updated session after GameContext method: ", updatedSession) //yes
       setGameSession(updatedSession);
       setParticipants(updatedSession.participants);
-      // setLoading(false)
     } else {
       console.log("NOT OK")
       console.error('Error adding participant:', await res.json());
     }
-    setLoading(false)
+    setLoading(false);
   };
+
+  const removeParticipant = async (participant) => {
+    if (!gameSession) return;
+
+    setLoading(true);
+
+    if (participant.name) {
+      // It's a temp user, remove them from the game session database record
+      const res = await fetch(`/api/game/remove_participant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: gameSession.sessionId, participantId: participant.id }),
+      });
+
+      if (res.ok) {
+        const updatedSession = await res.json();
+        setGameSession(updatedSession);
+        setParticipants(updatedSession.participants);
+      } else {
+        console.error('Error removing participant:', await res.json());
+      }
+    } else if (participant.userId) {
+      // It's a real user, handle accordingly
+      console.log('Removing real user: TO BE IMPLEMENTED');
+    }
+
+    setLoading(false);
+  };
+
 
   useEffect(() => {
     if (loading) return
@@ -72,21 +98,17 @@ export const GameProvider = ({ children }) => {
       console.log("All good")
 
     } else if (!gameSession && user && user.currentGameSession) {
-
       // Fetch and set game session 
-      const fetchGameSessionUpdateState = async () => {
-        const fetchedGameSession = await fetchGameSession(user.currentGameSession);
-      }
-      fetchGameSessionUpdateState()
+      fetchGameSession(user.currentGameSession);
 
     } else if (!user) {
       console.log("No user");
       router.push('/home');
     }
-  }, [user, gameSession, loading, router, fetchGameSession]);
+  }, [user, loading, router, gameSession, fetchGameSession]);
 
   return (
-    <GameContext.Provider value={{ gameSession, setGameSession, fetchGameSession, participants, setParticipants, addParticipant}}>
+    <GameContext.Provider value={{ gameSession, setGameSession, fetchGameSession, participants, setParticipants, addParticipant, removeParticipant}}>
       {children}
     </GameContext.Provider>
   );
