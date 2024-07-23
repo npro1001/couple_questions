@@ -78,11 +78,12 @@ export default function HomePage() {
             const res = await fetch('/api/game/create', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ sessionId, hostId: user._id }),
+              body: JSON.stringify({ sessionId, host: user }),
             });
             
             if (res.ok) {
-              await setGameSession({ sessionId, hostId: user._id, participants: [user._id], status: 'waiting' }); // Set game session
+              const userDetails = { userId: user._id, name: `${user.firstName} ${user.lastName}`, type: 'real', interests: user.interests };
+              await setGameSession({ sessionId, hostId: user._id, participants: [userDetails], status: 'waiting' }); // TODO fix duplicitaveness -- should be set by response from creation
               await updateUser({...user, currentGameSession: sessionId }); // Update user's current game session
               router.push(`/game_lobby?sessionId=${sessionId}`);
             } else {

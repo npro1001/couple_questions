@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import FontAwesomeIcon from '../fontawesome';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
+import { useGame } from '../../contexts/GameContext';
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -13,19 +14,89 @@ export default function SignInForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isSigningIn, setIsSigningIn] = useState(false);
 
-    const { signIn, loading } = useAuth();
+    const { signIn, loading, user } = useAuth();
+    const { fetchGameSession, addParticipant, gameSession } = useGame();
     const router = useRouter();
 
+    useEffect(() => {
+        const sessionId = sessionStorage.getItem('sessionId')
+        if (sessionId) {
+            console.log(`SessionId from session storage: ${sessionId}`);
+        }
+
+        // Perform redirection and game session logic after user is updated
+        if (!isSigningIn && user && sessionId) {
+            const handleRedirection = async () => {
+                console.log(`User after sign in: ${user}`);
+                try {
+                    console.log(`Fetching game session: ${sessionId}`);
+                    await fetchGameSession(sessionId);
+                    // IF game session
+                    // Wait until gameSession is updated
+                    const checkGameSessionUpdated = async () => {
+                        while (!gameSession) {
+                        await new Promise(resolve => setTimeout(resolve, 100)); // wait for 100ms
+                        }
+                    };
+                    
+                    await checkGameSessionUpdated();
+
+                    console.log('Adding participant');
+                    const participantDetails = { userId: user._id, name: `${user.firstName} ${user.lastName}`, type: 'real', interests: user.interests };
+                    await addParticipant({ participant: participantDetails, participantType: "real" });
+                    sessionStorage.removeItem('sessionId');
+                    console.log("REMOVED SESSION ID")
+                    router.push(`/game_lobby?sessionId=${sessionId}`);
+                } catch (err) {
+                    console.error('Error during game session handling:', err);
+                    setError(err.message);
+                }
+            
+            }
+            handleRedirection();
+        } else if (!isSigningIn && user && !sessionId) {
+            router.push('/home');
+        }
+        
+    }, [user, isSigningIn, fetchGameSession, addParticipant, gameSession, router])
+
+
+    // const handleSubmit = async (e) => {
+    //     console.log('Signing in...');
+    //     e.preventDefault();
+    //     setError('');
+    //     try {
+    //         await signIn(email, password);
+    //         console.log(`User after sign in: ${user}`);
+    //         const sessionId = sessionStorage.getItem('sessionId');
+    //         if (sessionId && user) {
+    //             console.log(`Fetching game session: ${sessionId}`);
+    //             await fetchGameSession(sessionId);
+    //             console.log('Adding participant');
+    //             await addParticipant({ userId: user._id, type: 'real' });
+    //             localStorage.removeItem('sessionId');
+    //             router.push(`/game_lobby?sessionId=${sessionId}`);
+    //           } else {
+    //             router.push('/home');
+    //           }
+    //     } catch (err) {
+    //         setError(err.message);
+    //     }
+    // };
 
     const handleSubmit = async (e) => {
         console.log('Signing in...');
         e.preventDefault();
         setError('');
+        setIsSigningIn(true); // Set signing in state to true
         try {
             await signIn(email, password);
+            setIsSigningIn(false);
         } catch (err) {
             setError(err.message);
+            setIsSigningIn(false); // Reset signing in state on error
         }
     };
 

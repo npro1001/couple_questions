@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  const { sessionId, hostId } = req.body;
+  const { sessionId, host } = req.body;
 
   try {
     console.log('Connecting to the database...');
@@ -19,10 +19,12 @@ export default async function handler(req, res) {
     const collection = db.collection('game_sessions');
 
     // Create a new game session
+    const userDetails = { userId: host._id, name: `${host.firstName} ${host.lastName}`, type: 'real', interests: host.interests };
+
     const session = {
       sessionId,
-      hostId,
-      participants: [hostId],
+      hostId: host._id,
+      participants: [userDetails],
       createdAt: new Date(),
       status: 'waiting', // waiting, active, finished
     };

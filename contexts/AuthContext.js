@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
       //   setLoading(false);
       //   return;
       // }
-      console.log("initializing auth")
+      console.log("Initializing auth")
       const token = localStorage.getItem('token');
       if (token) {
         try {
@@ -112,7 +112,6 @@ export function AuthProvider({ children }) {
       console.log("Sign-in response", {token, userData})
       localStorage.setItem('token', token);
       setUser(User.fromJSON(userData));
-      router.push('/home');
 
     } catch (error) {
       setError(error.message);
@@ -125,10 +124,12 @@ export function AuthProvider({ children }) {
   };
 
   const signOut = async () => {
+    // user.removeCurrentGameSession() // TODO impl
+    await updateUser({...user, currentGameSession: null }); // Remove game session
     localStorage.removeItem('token');
-    // TODO remove game session
     console.log("User signed out");
-    setUser(null);
+
+    // setUser(null);
     if (pathname !== '/sign_in') {
       router.push('/sign_in');
     }

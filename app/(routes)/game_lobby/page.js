@@ -2,7 +2,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useGame } from '../../../contexts/GameContext';
 import ProtectedRoute from '../../components/ProtectedRoute';
@@ -10,66 +10,77 @@ import FontAwesomeIcon from '../../fontawesome';
 import TempUser from '../../../models/TempUser';
 import { faEnvelope } from "@fortawesome/free-regular-svg-icons";
 import { faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
+import Pusher from 'pusher-js'
+// import pusher from '../../../lib/pusher';
 
 
 // TODO - Sign out should remove token AND game context from DB
 
 const GameLobby = () => {
     const router = useRouter();
-    const { user, loading, signOut } = useAuth();
-    const { gameSession, fetchGameSession, addParticipant, removeParticipant} = useGame();
+    const searchParams = useSearchParams();
+    const { user, loading, setLoading, signOut } = useAuth();
+    const { gameSession, fetchGameSession, addParticipant, removeParticipant } = useGame();
     const [tempUser, setTempUser] = useState(null);
     const [showAddGuestForm, setShowAddGuestForm] = useState(false);
     const [showInvitePopup, setShowInvitePopup] = useState(false);
     const [guestName, setGuestName] = useState('');
     const [guestInterests, setGuestInterests] = useState([]);
     const [interestInput, setInterestInput] = useState('');
+    // const { sessionId } = router.query;
+    const sessionId = searchParams.get('sessionId');
+
 
     useEffect(() => {
         // TODO REVIEW to ensure it deosnt trigger multiple auth checks
+        let pusher
+        let channel
 
         if (loading) return
+
         // Check if loading is finished and user session is lost
         if (!loading && !user) {
-          console.log("No user found in GameLobby");
-          signOut(); 
-        
+            console.log("No user found in GameLobby");
+            signOut();
+
+        } else if (sessionId && user) {
+            const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+                cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+                encrpyted: true,
+            })
+
+            const channel = pusher.subscribe(`game-session-${sessionId}`);
+
+            channel.bind('participant-joined', (data) => {
+                console.log('Participant Joined:', data);
+                addParticipant(data, "real"); //? data.participant
+            })
+
+            return () => {
+                if (channel) {
+                    channel.unbind_all();
+                    channel.unsubscribe();
+                }
+                // pusher.unsubscribe(`game-session-${sessionId}`);
+            }
+
         } else if (user && !user.currentGameSession) {
-          // If user exists but there's no current game session, fetch it
-          console.log('Fetching game session for the user');
-          fetchGameSession(); // Assuming fetchGameSession fetches and sets the game session
-        } else if (gameSession) {
+            // If user exists but there's no current game session, fetch it
+            console.log('Fetching game session for the user');
+            fetchGameSession(); // Assuming fetchGameSession fetches and sets the game session
 
-          if (gameSession.participants && gameSession.participants.length > 1) {
+        } else if (gameSession && gameSession.participants && gameSession.participants.length > 1) {
             const participant = gameSession.participants[1];
-
             if (participant.name) {
-            //   console.log('Temp User:', participant);
               setTempUser(participant);
             } else if (participant.userId) {
-            // TODO IMPL
-              // It's a real user, fetch their details
-            //   fetch(`/api/users/${participant.userId}`, {
-            //     method: 'GET',
-            //     headers: {
-            //       'Content-Type': 'application/json',
-            //     },
-            //   })
-            //   .then(response => response.json())
-            //   .then(data => {
-            //     console.log('Fetched Real User:', data);
-            //     // You can set the real user state here if you want
-            //     setTempUser(data); // Assuming you're reusing the tempUser state
-            //   })
-            //   .catch(error => {
-            //     console.error('Error fetching Real User:', error);
-            //   });
+              // Fetch real user details if necessary
             }
         }
-        }
-      }, [user, loading, fetchGameSession, gameSession, setTempUser, signOut]);
+        
+    }, [user, loading, sessionId, fetchGameSession, gameSession, signOut, addParticipant, setTempUser]);
 
-    
+
 
     // if (loading) {
     //     return (
@@ -99,12 +110,12 @@ const GameLobby = () => {
         setShowAddGuestForm(false);
     };
 
-    const handleFormSubmit = async (e) => {
+    const handleFormSubmit = async (e) => { // TODO - fix
         e.preventDefault();
         const guest = { type: 'temp', name: guestName, interests: guestInterests };
         setTempUser(guest);
         setShowAddGuestForm(false);
-        await addParticipant(guest);
+        await addParticipant(guest, "temp");
     };
 
     const handleAddInterest = () => {
@@ -127,7 +138,7 @@ const GameLobby = () => {
     };
 
 
-    const invitationUrl = `${window.location.origin}/join-game?sessionId}`;
+    // const invitationUrl = `${window.location.origin}/join-game?sessionId}`;
     return (
         <ProtectedRoute>
             <div className="flex flex-col items-center">
@@ -137,15 +148,41 @@ const GameLobby = () => {
                 </div>
 
                 <div className="mt-10"></div>
+                {loading && <div className="flex justify-around items-center pt-8 h-lvh align-center">
+                    <span className="loading loading-ring loading-lg align-middle"></span>
+                </div>}
 
-                <div className="mt-5 border border-primary rounded w-1/2 mx-auto flex flex-col items-center bg-base-100">
+                {user && <div className="mt-5 border border-primary rounded w-1/2 mx-auto flex flex-col items-center bg-base-100">
 
                     <h1 className="m-5 text-2xl">Game Lobby</h1>
 
                     {/* Players */}
                     <div className="m-5 flex flex-row justify-evenly w-full items-center">
-
-                        {/* Player 1 */}
+                        {gameSession && gameSession.participants.map((participant, index) => (
+                            <div key={index} className="border rounded flex flex-col items-center p-3 w-1/3 border-transparent">
+                                <div className="avatar placeholder">
+                                    <div className="bg-neutral text-neutral-content w-24 rounded-full">
+                                        <span className="text-3xl">{participant.name[0].toUpperCase()}{participant.name[1]?.toUpperCase()}</span>
+                                    </div>
+                                </div>
+                                <div className="flex flex-row">
+                                    <span className="mr-2 mt-2 text-3xl">{participant.name}</span>
+                                    {participant.type === 'temp' && (
+                                        <button type="button" className="btn btn-sm btn-outline btn-danger mt-3 items-center" onClick={() => handleRemoveGuest(participant)}>
+                                            <FontAwesomeIcon icon={faTimes} className=" text-white" />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap mt-3">
+                                    {participant.interests.map((interest, index) => (
+                                        <div key={index} className="badge badge-primary m-1">
+                                            {interest}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+{/**       
                         <div className="border rounded flex flex-col items-center p-3 w-1/3 border-transparent">
                             <div className="avatar placeholder">
                                 <div className="bg-neutral text-neutral-content w-24 rounded-full">
@@ -160,10 +197,9 @@ const GameLobby = () => {
                                     </div>
                                 ))}
                             </div>
-                            {/* <div className="badge badge-neutral">Host</div> */} 
+                            
                         </div>
 
-                        {/* Player 2 */}
                         {tempUser && (
                             <div className="border rounded flex flex-col items-center p-3 w-1/3 border-transparent">
                                 <div className="avatar placeholder">
@@ -185,10 +221,10 @@ const GameLobby = () => {
                                     ))}
                                 </div>
                             </div>
-                        )}
+                        )}*/}
 
                         {/* Mock Guest Profile */}
-                        {showAddGuestForm && (
+                        {gameSession && user && showAddGuestForm && user._id === gameSession.hostId && (
                             <div className="border rounded flex flex-col items-center p-3 w-1/3 border-transparent">
                                 <div className="avatar placeholder">
                                     <div className="bg-neutral text-neutral-content w-24 rounded-full">
@@ -215,9 +251,9 @@ const GameLobby = () => {
 
                     </div>
 
-                    
+
                     {/* Invite/Add options */}
-                    { (tempUser === null && !showAddGuestForm) && (
+                    {gameSession && tempUser === null && !showAddGuestForm &&  user._id === gameSession.hostId && (
                         <div className="border rounded flex flex-row items-center justify-center p-3 mb-10 w-1/3 border-transparent">
                             <button className="btn btn-outline btn-primary w-40 mx-2" onClick={handleInviteGuestButton}>
                                 <FontAwesomeIcon icon={faEnvelope} className="fas fa-envelope" />
@@ -232,7 +268,7 @@ const GameLobby = () => {
                     )}
 
                     {/* Guest Form */}
-                    {showAddGuestForm && (
+                    {gameSession && showAddGuestForm && (
                         <form onSubmit={handleFormSubmit} className="w-full flex flex-col items-center mt-3 mb-10">
                             <div className="flex flex-row w-2/3 items-center mb-3">
                                 <input
@@ -267,12 +303,12 @@ const GameLobby = () => {
                                 <p className="mb-4">Share this link with your guest:</p>
                                 <input
                                     type="text"
-                                    value={invitationUrl}
+                                    value={`${window.location.origin}/join?sessionId=${sessionId}`}
                                     readOnly
                                     className="input input-bordered w-full mb-4"
                                     onClick={(e) => e.target.select()}
                                 />
-                                <button className="btn btn-primary w-full mb-2" onClick={() => navigator.clipboard.writeText(invitationUrl)}>Copy Link</button>
+                                <button className="btn btn-primary w-full mb-2" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/join?sessionId=${sessionId}`)}>Copy Link</button>
                                 <button className="btn btn-secondary w-full" onClick={() => setShowInvitePopup(false)}>Close</button>
                             </div>
                         </div>
@@ -283,6 +319,7 @@ const GameLobby = () => {
                         <button className="btn btn-success w-1/3 mb-10" onClick={handleStartGame}>Start Game</button>
                     )}
                 </div>
+                }
             </div>
         </ProtectedRoute >
     );

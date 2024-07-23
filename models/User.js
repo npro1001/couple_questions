@@ -41,24 +41,24 @@ class User {
         );
     }
 
-    updateCurrentGameSession(gameSession) {
+    updateCurrentGameSession(gameSession) {  // TODO make this update DB AND state
         this.currentGameSession = gameSession;
     }
 
-    removeCurrentGameSession() {
+    removeCurrentGameSession() { // TODO make this update DB AND state
         this.currentGameSession = null;
     }
 
 
-    updateEmail(newEmail) {
+    updateEmail(newEmail) {  // TODO make this update DB AND state
         this.email = newEmail;
     }
 
-    updatePassword(newPassword) {
+    updatePassword(newPassword) {  // TODO make this update DB AND state
         this.password = newPassword;
     }
 
-    updateName(newFirstName, newLastName) {
+    updateName(newFirstName, newLastName) {  // TODO make this update DB AND state
         this.firstName = newFirstName;
         this.lastName = newLastName;
     }
