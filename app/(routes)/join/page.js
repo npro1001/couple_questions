@@ -23,6 +23,7 @@ const JoinGame = () => {
             console.log('No sessionId found');
           }
 
+        //! Improperly checks if user is signed in
         if (sessionId && user) {
             const joinGame = async () => {
                 try {

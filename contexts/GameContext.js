@@ -22,24 +22,28 @@ export const GameProvider = ({ children }) => {
 
     setLoading(true);
 
-    const res = await fetch(`/api/game/fetch_session`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: sessionId }),
-    });
+    try {
+      const res = await fetch(`/api/game/fetch_session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sessionId }),
+      });
 
-    if (res.ok) {
-      const updatedSession = await res.json();
-      setGameSession(updatedSession);
-      // setLoading(false)
-    } else {
-      console.log("NOT OK")
-      console.error('Error fetching game session:', await res.json());
-
+      if (res.ok) {
+          const updatedSession = await res.json();
+          setGameSession(updatedSession);
+          setParticipants(updatedSession.participants);
+      } else {
+          console.log("NOT OK");
+          console.error('Error fetching game session:', await res.json());
+      }
+    } catch (error) {
+        console.error('Fetch game session error:', error);
+    } finally {
+        setLoading(false);
     }
-    setLoading(false)
 
-  }, [setLoading]);
+  }, [setLoading, setGameSession, setParticipants]);
 
   const addParticipant = async ({participant, participantType}) => {
     console.log("Game session: ", gameSession)
@@ -70,12 +74,11 @@ export const GameProvider = ({ children }) => {
 
     setLoading(true);
 
-    if (participant.name) {
-      // It's a temp user, remove them from the game session database record
+    if (participant) {
       const res = await fetch(`/api/game/remove_participant`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: gameSession.sessionId, participantId: participant.id }),
+        body: JSON.stringify({ sessionId: gameSession.sessionId, participant: participant }),
       });
 
       if (res.ok) {
@@ -85,9 +88,8 @@ export const GameProvider = ({ children }) => {
       } else {
         console.error('Error removing participant:', await res.json());
       }
-    } else if (participant.userId) {
-      // It's a real user, handle accordingly
-      console.log('Removing real user: TO BE IMPLEMENTED');
+    } else {
+      console.log('Error when removing participant: ', participant);
     }
 
     setLoading(false);

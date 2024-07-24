@@ -2,6 +2,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import React, { useState, useEffect } from 'react';
+import { getPusherInstance, disconnectPusherInstance } from '@/lib/clientPusher';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useGame } from '../../../contexts/GameContext';
@@ -34,50 +35,88 @@ const GameLobby = () => {
 
 
     useEffect(() => {
-        // TODO REVIEW to ensure it deosnt trigger multiple auth checks
-        let pusher
-        let channel
+        const setupPusher = async () => {
+            if (!sessionId) {
+              signOut();
+              return;
+            }
+      
+            const pusher = getPusherInstance();
+      
+            if (channelRef.current) {
+              channelRef.current.unbind_all();
+              channelRef.current.unsubscribe();
+            }
+      
+            channelRef.current = pusher.subscribe(`game-session-${sessionId}`);
+      
+            channelRef.current.bind('participant-joined', async (data) => {
+              console.log('Participant Joined:', data);
+              await fetchGameSession(sessionId);
+              if (data.participant && data.participant.name) {
+                toast.success(`${data.participant.name} has joined!`);
+              } else {
+                console.error('Participant data does not contain name:', data);
+              }
+            });
+      
+            channelRef.current.bind('participant-left', async (data) => {
+              console.log('Participant Left:', data);
+              await fetchGameSession(sessionId);
+              if (data.participant && data.participant.name) {
+                toast.success(`${data.participant.name} left/was kicked!`);
+              } else {
+                console.error('Participant data does not contain name:', data);
+              }
+            });
+          };
 
         if (loading) return
 
-        // Check if loading is finished and user session is lost
-        if (!loading && !user) {
+        if (!user) {
             console.log("No user found in GameLobby");
             signOut();
+            return
+        }
 
-        } else if (sessionId && user) {
-            const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
-                cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
-                encrpyted: true,
-            })
+        if (sessionId && user) {
+            console.log("UseEffect Case 2")
+            // fetchGameSession(gameSession)
 
-            const channel = pusher.subscribe(`game-session-${sessionId}`);
-
-            channel.bind('participant-joined', (data) => {
-                console.log('Participant Joined:', data);
-                fetchGameSession(sessionId); // Fetch updated session with new participant
-                if (data.participant && data.participant.name) {
-                    toast.success(`${data.participant.name} has joined!`);
-                  } else {
-                    console.error('Participant data does not contain name:', data);
-                  }
-
-            })
-
-            return () => {
-                if (channel) {
-                    channel.unbind_all();
-                    channel.unsubscribe();
-                }
-                // pusher.unsubscribe(`game-session-${sessionId}`);
+            if (!gameSession) {
+                fetchGameSession(sessionId);
             }
 
-        } else if (user && !user.currentGameSession) {
-            // If user exists but there's no current game session, fetch it
-            console.log('Fetching game session for the user');
-            fetchGameSession(); // Assuming fetchGameSession fetches and sets the game session
+            if (gameSession) {
+                if ( user._id !== gameSession.hostId && !gameSession.participants.some(participant => participant.userId === user._id)) {
+                    console.log("UseEffect Case 2.5")
+                    toast.error(`You dont belong here!`);
+                    router.push('/home');
+                    return
+                }
 
-        } else if (gameSession && gameSession.participants && gameSession.participants.length > 1) {
+                // Setup Pusher           
+                setupPusher();
+                return () => {
+                    if (channelRef.current) {
+                    channelRef.current.unbind_all();
+                    channelRef.current.unsubscribe();
+                    }
+                    disconnectPusherInstance();
+                };
+            }
+
+        }
+
+        if (gameSession && gameSession.participants && gameSession.participants.length > 1) { // TODO deal with more participants? 
+            console.log("UseEffect Case 4")
+            if (gameSession && user._id !== gameSession.hostId && !gameSession.participants.some(participant => participant.userId === user._id)) {
+                console.log("UseEffect Case 4.5")
+                toast.error(`You dont belong here!`);
+                router.push('/home');
+                return
+            }
+
             const participant = gameSession.participants[1];
             if (participant.name) {
               setTempUser(participant);
@@ -137,16 +176,16 @@ const GameLobby = () => {
         setGuestInterests(guestInterests.filter((_, i) => i !== index));
     };
 
-    const handleRemoveGuest = (participant, participantType) => {
-        if (participantType === 'temp') {
-            removeParticipant(tempUser);
+    const handleRemoveGuest = (participant) => {
+        removeParticipant(participant);
+        if (participant.type === 'temp') {
+            console.log("Removing temp guest")
             setGuestName('');
             setGuestInterests([]);
             setShowAddGuestForm(false);
             setTempUser(null);
         } else {
-            console.log("REMOVE GUEST")
-            removeParticipant(participant)
+            console.log("Removing real guest")
         }
 
     };
@@ -176,9 +215,9 @@ const GameLobby = () => {
                     <div className="m-5 flex flex-row justify-evenly w-full items-center">
                         {gameSession && gameSession.participants.map((participant, index) => (
                             <div key={index} className="border rounded flex flex-col items-center p-3 w-1/3 border-transparent">
-                                <div className="avatar placeholder">
+                                <div className="relative avatar placeholder">
                                     {user._id === gameSession.hostId && participant.userId !== user._id && (
-                                        <button type="button" className="top-0 relative bg-transparent text-black rounded-full p-1" onClick={() => handleRemoveGuest(participant, participant.type)}>
+                                        <button type="button" className="absolute top-0 left-0 bg-transparent hover:bg-primary text-black btn-circle btn-sm p-1" onClick={() => handleRemoveGuest(participant)}>
                                             ⚽
                                         </button>
                                     )}

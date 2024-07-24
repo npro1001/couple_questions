@@ -22,32 +22,28 @@ export default function SignInForm() {
 
     useEffect(() => {
         const sessionId = sessionStorage.getItem('sessionId')
-        if (sessionId) {
-            console.log(`SessionId from session storage: ${sessionId}`);
-        }
 
-        // Perform redirection and game session logic after user is updated
+        // Sign In with redirect
         if (!isSigningIn && user && sessionId) {
             const handleRedirection = async () => {
                 console.log(`User after sign in: ${user}`);
                 try {
                     console.log(`Fetching game session: ${sessionId}`);
                     await fetchGameSession(sessionId);
-                    // IF game session
+
                     // Wait until gameSession is updated
                     const checkGameSessionUpdated = async () => {
                         while (!gameSession) {
-                        await new Promise(resolve => setTimeout(resolve, 100)); // wait for 100ms
+                        await new Promise(resolve => setTimeout(resolve, 100));
                         }
                     };
                     
                     await checkGameSessionUpdated();
 
-                    console.log('Adding participant');
+                    console.log('Adding participant to game session');
                     const participantDetails = { userId: user._id, name: `${user.firstName} ${user.lastName}`, type: 'real', interests: user.interests };
                     await addParticipant({ participant: participantDetails, participantType: "real" });
                     sessionStorage.removeItem('sessionId');
-                    console.log("REMOVED SESSION ID")
                     router.push(`/game_lobby?sessionId=${sessionId}`);
                 } catch (err) {
                     console.error('Error during game session handling:', err);
@@ -56,35 +52,14 @@ export default function SignInForm() {
             
             }
             handleRedirection();
+
+        // Regular Sign In
         } else if (!isSigningIn && user && !sessionId) {
             router.push('/home');
         }
         
     }, [user, isSigningIn, fetchGameSession, addParticipant, gameSession, router])
 
-
-    // const handleSubmit = async (e) => {
-    //     console.log('Signing in...');
-    //     e.preventDefault();
-    //     setError('');
-    //     try {
-    //         await signIn(email, password);
-    //         console.log(`User after sign in: ${user}`);
-    //         const sessionId = sessionStorage.getItem('sessionId');
-    //         if (sessionId && user) {
-    //             console.log(`Fetching game session: ${sessionId}`);
-    //             await fetchGameSession(sessionId);
-    //             console.log('Adding participant');
-    //             await addParticipant({ userId: user._id, type: 'real' });
-    //             localStorage.removeItem('sessionId');
-    //             router.push(`/game_lobby?sessionId=${sessionId}`);
-    //           } else {
-    //             router.push('/home');
-    //           }
-    //     } catch (err) {
-    //         setError(err.message);
-    //     }
-    // };
 
     const handleSubmit = async (e) => {
         console.log('Signing in...');

@@ -127,6 +127,7 @@ export function AuthProvider({ children }) {
     // user.removeCurrentGameSession() // TODO impl
     await updateUser({...user, currentGameSession: null }); // Remove game session
     localStorage.removeItem('token');
+    localStorage.removeItem('pusherTransportTLS');
     console.log("User signed out");
 
     // setUser(null);
