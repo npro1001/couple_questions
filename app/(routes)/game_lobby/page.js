@@ -1,7 +1,7 @@
 "use client";
 
 import { v4 as uuidv4 } from 'uuid';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getPusherInstance, disconnectPusherInstance } from '@/lib/clientPusher';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -30,8 +30,9 @@ const GameLobby = () => {
     const [guestName, setGuestName] = useState('');
     const [guestInterests, setGuestInterests] = useState([]);
     const [interestInput, setInterestInput] = useState('');
-    // const { sessionId } = router.query;
     const sessionId = searchParams.get('sessionId');
+    const channelRef = useRef(null);
+    const pusherRef = useRef(null);
 
 
     useEffect(() => {
