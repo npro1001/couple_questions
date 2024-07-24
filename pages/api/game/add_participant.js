@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       const userDetails = { userId: participant.userId, name: participant.name, type: participant.type, interests: participant.interests };
       update = { $addToSet: { participants: userDetails } };
       
-      await pusher.trigger(`game-session-${sessionId}`, 'participant-joined', { userId: participant.userId });
+      await pusher.trigger(`game-session-${sessionId}`, 'participant-joined', { participant });
     
     } else {
       return res.status(400).json({ success: false, message: 'Invalid participant type' });

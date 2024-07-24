@@ -11,6 +11,8 @@ import TempUser from '../../../models/TempUser';
 import { faEnvelope } from "@fortawesome/free-regular-svg-icons";
 import { faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
 import Pusher from 'pusher-js'
+import toast from 'react-hot-toast';
+
 // import pusher from '../../../lib/pusher';
 
 
@@ -53,7 +55,13 @@ const GameLobby = () => {
 
             channel.bind('participant-joined', (data) => {
                 console.log('Participant Joined:', data);
-                addParticipant(data, "real"); //? data.participant
+                fetchGameSession(sessionId); // Fetch updated session with new participant
+                if (data.participant && data.participant.name) {
+                    toast.success(`${data.participant.name} has joined!`);
+                  } else {
+                    console.error('Participant data does not contain name:', data);
+                  }
+
             })
 
             return () => {
@@ -112,7 +120,7 @@ const GameLobby = () => {
 
     const handleFormSubmit = async (e) => { // TODO - fix
         e.preventDefault();
-        const guest = { type: 'temp', name: guestName, interests: guestInterests };
+        const guest = { userId: uuidv4(), type: 'temp', name: guestName, interests: guestInterests };
         setTempUser(guest);
         setShowAddGuestForm(false);
         await addParticipant(guest, "temp");
@@ -129,13 +137,21 @@ const GameLobby = () => {
         setGuestInterests(guestInterests.filter((_, i) => i !== index));
     };
 
-    const handleRemoveGuest = () => {
-        removeParticipant(tempUser);
-        setGuestName('');
-        setGuestInterests([]);
-        setShowAddGuestForm(false);
-        setTempUser(null);
+    const handleRemoveGuest = (participant, participantType) => {
+        if (participantType === 'temp') {
+            removeParticipant(tempUser);
+            setGuestName('');
+            setGuestInterests([]);
+            setShowAddGuestForm(false);
+            setTempUser(null);
+        } else {
+            console.log("REMOVE GUEST")
+            removeParticipant(participant)
+        }
+
     };
+
+    
 
 
     // const invitationUrl = `${window.location.origin}/join-game?sessionId}`;
@@ -161,17 +177,18 @@ const GameLobby = () => {
                         {gameSession && gameSession.participants.map((participant, index) => (
                             <div key={index} className="border rounded flex flex-col items-center p-3 w-1/3 border-transparent">
                                 <div className="avatar placeholder">
+                                    {user._id === gameSession.hostId && participant.userId !== user._id && (
+                                        <button type="button" className="top-0 relative bg-transparent text-black rounded-full p-1" onClick={() => handleRemoveGuest(participant, participant.type)}>
+                                            ⚽
+                                        </button>
+                                    )}
                                     <div className="bg-neutral text-neutral-content w-24 rounded-full">
-                                        <span className="text-3xl">{participant.name[0].toUpperCase()}{participant.name[1]?.toUpperCase()}</span>
+                                        <span className="text-3xl">{participant.name[0].toUpperCase()}{participant.name[1]?.toUpperCase()}</span> 
                                     </div>
                                 </div>
                                 <div className="flex flex-row">
                                     <span className="mr-2 mt-2 text-3xl">{participant.name}</span>
-                                    {participant.type === 'temp' && (
-                                        <button type="button" className="btn btn-sm btn-outline btn-danger mt-3 items-center" onClick={() => handleRemoveGuest(participant)}>
-                                            <FontAwesomeIcon icon={faTimes} className=" text-white" />
-                                        </button>
-                                    )}
+                                   
                                 </div>
                                 <div className="flex flex-wrap mt-3">
                                     {participant.interests.map((interest, index) => (
@@ -182,46 +199,7 @@ const GameLobby = () => {
                                 </div>
                             </div>
                         ))}
-{/**       
-                        <div className="border rounded flex flex-col items-center p-3 w-1/3 border-transparent">
-                            <div className="avatar placeholder">
-                                <div className="bg-neutral text-neutral-content w-24 rounded-full">
-                                    <span className="text-3xl">{user.firstName[0].toUpperCase()}{user.lastName[0].toUpperCase()}</span>
-                                </div>
-                            </div>
-                            <span className="mt-2 text-3xl">{user.firstName}</span>
-                            <div className="flex flex-wrap mt-3">
-                                {user.interests.map((interest, index) => (
-                                    <div key={index} className="badge badge-primary m-1">
-                                        {interest}
-                                    </div>
-                                ))}
-                            </div>
-                            
-                        </div>
 
-                        {tempUser && (
-                            <div className="border rounded flex flex-col items-center p-3 w-1/3 border-transparent">
-                                <div className="avatar placeholder">
-                                    <div className="bg-neutral text-neutral-content w-24 rounded-full">
-                                        <span className="text-3xl">{tempUser.name[0].toUpperCase()}{tempUser.name[1].toUpperCase()}</span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-row">
-                                    <span className="mr-2 mt-2 text-3xl">{tempUser.name}</span>
-                                    <button type="button" className="btn btn-sm btn-outline btn-danger mt-3 items-center" onClick={handleRemoveGuest}>
-                                        <FontAwesomeIcon icon={faTimes} className=" text-white" />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap mt-3">
-                                    {tempUser.interests.map((interest, index) => (
-                                        <div key={index} className="badge badge-primary m-1">
-                                            {interest}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}*/}
 
                         {/* Mock Guest Profile */}
                         {gameSession && user && showAddGuestForm && user._id === gameSession.hostId && (

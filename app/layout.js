@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../contexts/AuthContext";
 import { GameProvider } from "../contexts/GameContext"; // Import GameProvider
+import { Toaster } from 'react-hot-toast';
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,6 +22,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <GameProvider>
             {children}
+            <Toaster position="top-right" />
           </GameProvider>
         </AuthProvider>
       </body>
