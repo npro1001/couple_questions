@@ -15,6 +15,8 @@ export function AuthProvider({ children }) {
 
 
   useEffect(() => {
+    console.log("AUTH USE EFFECT")
+
     const initializeAuth = async () => {
       console.log("Initializing auth");
 
@@ -48,7 +50,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       console.log("Fetching user with token: ", token)
-      const res = await fetch('http://localhost:3000/api/auth/me', {
+      const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -93,7 +95,7 @@ export function AuthProvider({ children }) {
 
   const signIn = async (email, password) => {
     setLoading(true);
-    setError(null); // Reset error statae
+    setError(null); // Reset error state
     try {
       const res = await fetch('/api/sign_in', {
         method: 'POST',
@@ -120,13 +122,19 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => {
     // user.removeCurrentGameSession() // TODO impl
-    await updateUser({...user, currentGameSession: null }); // Remove game session
+    // if (user.currentGameSession !== null) {
+    //   await endGame()
+    //   await updateUser({...user, currentGameSession: null }); // Remove game session
+    // }
+    console.log("AUTH SIGNOUT")
+    
+    router.push('/sign_in');
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('pusherTransportTLS');
     console.log("User signed out");
-    router.push('/sign_in');
     // }
+
   };
 
   // if (loading) {

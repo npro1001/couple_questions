@@ -20,10 +20,12 @@ export default function SignInForm() {
     const router = useRouter();
 
     useEffect(() => {
+        console.log("SIGN IN FORM USE EFFECT")
         const sessionId = sessionStorage.getItem('sessionId');
         if (!user) return;
     
         const handleRedirection = async () => {
+          console.log("HandleRedirection")
           if (user && sessionId) {
             try {
               await fetchGameSession(sessionId);

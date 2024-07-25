@@ -14,7 +14,7 @@ export const GameProvider = ({ children }) => {
   const pathname = usePathname();
   const [gameSession, setGameSession] = useState(null);
   const [participants, setParticipants] = useState([]);
-  const { user, loading, setLoading } = useAuth();
+  const { user, loading, setLoading, updateUser, signOut: authSignOut } = useAuth();
   const router = useRouter();
 
   const fetchGameSession = useCallback(async (sessionId) => {
@@ -43,7 +43,8 @@ export const GameProvider = ({ children }) => {
         setLoading(false);
     }
 
-  }, [setLoading, setGameSession, setParticipants]);
+  }, []);
+  // }, [setLoading, setGameSession, setParticipants]);
 
   const addParticipant = async ({participant, participantType}) => {
     console.log("Game session: ", gameSession)
@@ -95,14 +96,51 @@ export const GameProvider = ({ children }) => {
     setLoading(false);
   };
 
+  const endGame = async (userId) => {
+    if (!gameSession) return;
+
+    setLoading(true);
+
+    if (userId) {
+      const res = await fetch(`/api/game/end_game`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: gameSession.sessionId, userId: userId }),
+      });
+
+      if (res.ok) {
+        setGameSession(null)
+        console.log("Game session set to null")
+      } else {
+        console.error('Error removing participant:', await res.json());
+      }
+    } else {
+      console.log('Error when removing participant: ', participant);
+    }
+
+    setLoading(false);
+  };
+
+  const signOut = async () => {
+    console.log("SIGN OUT")
+    if (gameSession) {
+      await endGame(user._id)
+      await updateUser({...user, currentGameSession: null }); // Remove game session
+    }
+    authSignOut()
+
+  };
+
 
   useEffect(() => {
+    console.log("GAME USE EFFECT")
+
     if (loading) return
     
     if (gameSession && user) {
       console.log("All good")
 
-    } else if (!gameSession && user && user.currentGameSession) {
+    } else if (!gameSession && !loading && user && user.currentGameSession) {
       // Fetch and set game session 
       fetchGameSession(user.currentGameSession);
 
@@ -115,7 +153,7 @@ export const GameProvider = ({ children }) => {
   }, [user, loading, router, gameSession, pathname, fetchGameSession]);
 
   return (
-    <GameContext.Provider value={{ gameSession, setGameSession, fetchGameSession, participants, setParticipants, addParticipant, removeParticipant}}>
+    <GameContext.Provider value={{ gameSession, setGameSession, fetchGameSession, participants, setParticipants, addParticipant, removeParticipant, endGame, signOut}}>
       {children}
     </GameContext.Provider>
   );

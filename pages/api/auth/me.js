@@ -13,6 +13,7 @@ export default async function handler(req, res) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const { db } = await connectToDatabase();
     const user = await db.collection('users').findOne({ _id: ObjectId.createFromHexString(decoded.userId) });
+    // console.log(user)
 
     if (!user) {
       console.log("User not found in /api/auth/me")

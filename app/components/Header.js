@@ -1,10 +1,12 @@
 // app/components/Header.js
 import NavMenu from "./NavMenu"
 import { useAuth } from '../../contexts/AuthContext';
+import { useGame } from '../../contexts/GameContext';
 
 
 export default function Header() {
-    const { user, signOut } = useAuth();
+    const { user } = useAuth();
+    const { signOut } = useGame();
 
     return (
       <div className="relative mt-3 flex flex-row justify-between w-full">

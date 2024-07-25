@@ -1,4 +1,3 @@
-import { LobbyPlayerCard } from './../../components/LobbyPlayerCard';
 "use client";
 
 import { v4 as uuidv4 } from 'uuid';
@@ -14,6 +13,7 @@ import { faEnvelope } from "@fortawesome/free-regular-svg-icons";
 import { faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
 import Pusher from 'pusher-js'
 import toast from 'react-hot-toast';
+import { LobbyPlayerCard } from './../../components/LobbyPlayerCard';
 
 // import pusher from '../../../lib/pusher';
 
