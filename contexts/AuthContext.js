@@ -16,31 +16,26 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // Skip authentication logic if the current page is the sign-in page
-      // if (pathname === '/sign_in') {
-      //   setLoading(false);
-      //   return;
-      // }
-      console.log("Initializing auth")
+      console.log("Initializing auth");
+
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          // Replace this URL with your actual API endpoint
           const response = await fetch('/api/auth/me', {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (!response.ok) throw new Error('Token validation failed');
           const userData = await response.json();
-          setUser(userData); // Restore user session
-          console.log("Auth initialized")
+          setUser(userData);
+          console.log("Auth initialized");
         } catch (error) {
           console.error(error);
-          localStorage.removeItem('token'); // Clear invalid token
-          router.push('/sign_in'); // Redirect to sign-in page
+          localStorage.removeItem('token');
+          router.push('/sign_in');
         }
       } else {
         if (pathname !== '/sign_in') {
-          router.push('/sign_in')
+          router.push('/sign_in');
         }
       }
       setLoading(false);
@@ -126,14 +121,12 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     // user.removeCurrentGameSession() // TODO impl
     await updateUser({...user, currentGameSession: null }); // Remove game session
+    setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('pusherTransportTLS');
     console.log("User signed out");
-
-    // setUser(null);
-    if (pathname !== '/sign_in') {
-      router.push('/sign_in');
-    }
+    router.push('/sign_in');
+    // }
   };
 
   // if (loading) {

@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 
 export default function Header() {
-    const { user } = useAuth();
+    const { user, signOut } = useAuth();
 
     return (
       <div className="relative mt-3 flex flex-row justify-between w-full">
@@ -16,6 +16,7 @@ export default function Header() {
         </div>
 
         <div className="flex flex-shrink-0 items-center">
+          <button className="btn btn-neutral-content hover:btn-primary" onClick={signOut}>SignOut</button>
           <button className="btn btn-neutral-content hover:btn-primary" onClick={(e) => handleNewGame(e)}>Request Feature</button>
           <div className="avatar placeholder ml-3">
             <div className="bg-neutral text-neutral-content w-12 rounded-full">

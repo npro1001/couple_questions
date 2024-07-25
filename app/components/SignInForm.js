@@ -14,66 +14,58 @@ export default function SignInForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [isSigningIn, setIsSigningIn] = useState(false);
 
     const { signIn, loading, user } = useAuth();
     const { fetchGameSession, addParticipant, gameSession } = useGame();
     const router = useRouter();
 
     useEffect(() => {
-        const sessionId = sessionStorage.getItem('sessionId')
-
-        // Sign In with redirect
-        if (!isSigningIn && user && sessionId) {
-            const handleRedirection = async () => {
-                console.log(`User after sign in: ${user}`);
-                try {
-                    console.log(`Fetching game session: ${sessionId}`);
-                    await fetchGameSession(sessionId);
-
-                    // Wait until gameSession is updated
-                    const checkGameSessionUpdated = async () => {
-                        while (!gameSession) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        }
-                    };
-                    
-                    await checkGameSessionUpdated();
-
-                    console.log('Adding participant to game session');
-                    const participantDetails = { userId: user._id, name: `${user.firstName} ${user.lastName}`, type: 'real', interests: user.interests };
-                    await addParticipant({ participant: participantDetails, participantType: "real" });
-                    sessionStorage.removeItem('sessionId');
-                    router.push(`/game_lobby?sessionId=${sessionId}`);
-                } catch (err) {
-                    console.error('Error during game session handling:', err);
-                    setError(err.message);
+        const sessionId = sessionStorage.getItem('sessionId');
+        if (!user) return;
+    
+        const handleRedirection = async () => {
+          if (user && sessionId) {
+            try {
+              await fetchGameSession(sessionId);
+    
+              const checkGameSessionUpdated = async () => {
+                while (!gameSession) {
+                  await new Promise(resolve => setTimeout(resolve, 100));
                 }
-            
+              };
+    
+              await checkGameSessionUpdated();
+              const participantDetails = {
+                userId: user._id,
+                name: `${user.firstName} ${user.lastName}`,
+                type: 'real',
+                interests: user.interests,
+              };
+              await addParticipant({ participant: participantDetails, participantType: "real" });
+              sessionStorage.removeItem('sessionId');
+              router.push(`/game_lobby?sessionId=${sessionId}`);
+            } catch (err) {
+              console.error('Error during game session handling:', err);
+              setError(err.message);
             }
-            handleRedirection();
-
-        // Regular Sign In
-        } else if (!isSigningIn && user && !sessionId) {
+          } else {
             router.push('/home');
-        }
-        
-    }, [user, isSigningIn, fetchGameSession, addParticipant, gameSession, router])
+          }
+        };
+    
+        handleRedirection();
+      }, [user, fetchGameSession, addParticipant, gameSession, router]);
 
 
     const handleSubmit = async (e) => {
-        console.log('Signing in...');
         e.preventDefault();
         setError('');
-        setIsSigningIn(true); // Set signing in state to true
         try {
-            await signIn(email, password);
-            setIsSigningIn(false);
+          await signIn(email, password);
         } catch (err) {
-            setError(err.message);
-            setIsSigningIn(false); // Reset signing in state on error
+          setError(err.message);
         }
-    };
+      };
 
     const handleGoogleSignIn = () => {
         // TODO Implement Google Sign-In logic here

@@ -1,3 +1,4 @@
+import { LobbyPlayerCard } from './../../components/LobbyPlayerCard';
 "use client";
 
 import { v4 as uuidv4 } from 'uuid';
@@ -23,7 +24,7 @@ const GameLobby = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, loading, setLoading, signOut } = useAuth();
-    const { gameSession, fetchGameSession, addParticipant, removeParticipant } = useGame();
+    const { gameSession, fetchGameSession, removeParticipant } = useGame();
     const [tempUser, setTempUser] = useState(null);
     const [showAddGuestForm, setShowAddGuestForm] = useState(false);
     const [showInvitePopup, setShowInvitePopup] = useState(false);
@@ -81,31 +82,30 @@ const GameLobby = () => {
         }
 
         if (sessionId && user) {
-            console.log("UseEffect Case 2")
-            // fetchGameSession(gameSession)
 
             if (!gameSession) {
                 fetchGameSession(sessionId);
+                return
             }
 
-            if (gameSession) {
-                if ( user._id !== gameSession.hostId && !gameSession.participants.some(participant => participant.userId === user._id)) {
-                    console.log("UseEffect Case 2.5")
-                    toast.error(`You dont belong here!`);
-                    router.push('/home');
-                    return
+                // if (gameSession) {
+            if (gameSession && user._id !== gameSession.hostId && !gameSession.participants.some(participant => participant.userId === user._id)) {
+                console.log("UseEffect Case 2.5")
+                toast.error(`You dont belong here!`);
+                router.push('/home');
+                return
+            }
+
+            // Setup Pusher           
+            setupPusher();
+            return () => {
+                if (channelRef.current) {
+                channelRef.current.unbind_all();
+                channelRef.current.unsubscribe();
                 }
-
-                // Setup Pusher           
-                setupPusher();
-                return () => {
-                    if (channelRef.current) {
-                    channelRef.current.unbind_all();
-                    channelRef.current.unsubscribe();
-                    }
-                    disconnectPusherInstance();
-                };
-            }
+                disconnectPusherInstance();
+            };
+                // }
 
         }
 
@@ -126,7 +126,7 @@ const GameLobby = () => {
             }
         }
         
-    }, [user, loading, sessionId, fetchGameSession, gameSession, signOut, addParticipant, setTempUser]);
+    }, [user, loading, sessionId, fetchGameSession, gameSession, signOut, router, setTempUser]);
 
 
 
@@ -163,7 +163,7 @@ const GameLobby = () => {
         const guest = { userId: uuidv4(), type: 'temp', name: guestName, interests: guestInterests };
         setTempUser(guest);
         setShowAddGuestForm(false);
-        await addParticipant(guest, "temp");
+        awai(guest, "temp");
     };
 
     const handleAddInterest = () => {

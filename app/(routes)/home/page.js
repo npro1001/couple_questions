@@ -14,8 +14,7 @@ import ProtectedRoute from '../../components/ProtectedRoute'
 import { motion, AnimatePresence } from 'framer-motion'
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../../../models/User';
-
-
+import HomeUserCoins from './../../components/HomeUserCoins';
 
 
 export default function HomePage() {
@@ -63,7 +62,7 @@ export default function HomePage() {
 
   return (
     <ProtectedRoute>
-      <motion.div
+      {!loading && user && <motion.div
         initial={{ opacity: 1, scale: 1 }}
         animate={{ opacity: startGame ? 0 : 1, scale: startGame ? 1.5 : 1 }}
         exit={{ opacity: 0, scale: 5 }}
@@ -115,35 +114,11 @@ export default function HomePage() {
           </div>
 
           {/* Coin Info */}
-          <div className="flex-grow flex items-start justify-around mt-5">
-            <div className="flex flex-col">
-              <div className="stats bg-primary bg-opacity-85 text-primary-content">
-
-                <div className="stat">
-                  <div className="stat-title text-primary-content">Q-coins</div>
-                  <div className="flex flex-row justify-around items-center">
-                    <Image className="w-full h-auto" src="/coin.png" alt="coin" width={30} height={30} />
-                    <div className="stat-value ml-2">{user.questionCredits?.toString()}</div>
-                  </div>
-                </div>
-
-                <div className="stat">
-                  <div className="stat-title text-primary-content">Q-skips</div>
-                  <div className="flex flex-row justify-around items-center">
-                    <Image className="w-full h-auto" src="/skip.png" alt="coin" width={30} height={30} />
-                    <div className="stat-value ml-2">{user.questionSkipCredits?.toString()}</div>
-                  </div>
-                </div>
-
-              </div>
-              <div className="stat-actions w-full mt-2">
-                <button className="btn btn-sm btn-success w-full hover:btn-primary">Add more Q-coins</button>
-              </div>
-            </div>
-          </div>
+          <HomeUserCoins />
+          
         </div>
       </div>
-      </motion.div> 
+      </motion.div> }
     </ProtectedRoute>
   );
 }
